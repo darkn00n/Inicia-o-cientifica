@@ -1,0 +1,73 @@
+<?xml version='1.0'?>
+<!DOCTYPE platform SYSTEM "http://simgrid.gforge.inria.fr/simgrid/simgrid.dtd">
+<platform version="4.1">
+  <zone	id="z0"	routing="Full">
+    <host	id="server0"	speed="100Mf"/>
+    <host	id="server1"	speed="100Mf"/>
+    <host	id="server2"	speed="100Mf"/>
+    <host	id="server3"	speed="100Mf"/>
+
+    <host	id="cliente0"	speed="10Mf"/>
+    <host	id="cliente1"	speed="10Mf"/>
+    <host id="cliente2"	speed="10Mf"/>
+    <host id="cliente3"	speed="10Mf"/>
+
+    <link	id="link0" bandwidth="50.0MBps" latency="0us"/>
+    <link	id="link1" bandwidth="50.0MBps" latency="0us"/>
+    <link	id="link2" bandwidth="50.0MBps" latency="0us"/>
+    <link	id="link3" bandwidth="50.0MBps" latency="0us"/>
+    <link	id="link5" bandwidth="50.0MBps" latency="0us"/>
+
+    <route src="cliente0"	dst="server0">
+      <link_ctn id="link5"/>
+    </route>
+    <route src="cliente1" dst="server0">
+      <link_ctn id="link0"/>
+    </route>
+    <route src="cliente2" dst="server0">
+      <link_ctn id="link0"/>
+    </route>
+    <route src="cliente3" dst="server0">
+      <link_ctn id="link0"/>
+    </route>
+
+    <route src="cliente0" dst="server1">
+      <link_ctn id="link1"/>
+    </route>
+    <route src="cliente1" dst="server1">
+      <link_ctn id="link1"/>
+    </route>
+    <route src="cliente2" dst="server1">
+      <link_ctn id="link1"/>
+    </route>
+    <route src="cliente3" dst="server1">
+      <link_ctn id="link1"/>
+    </route>
+
+    <route src="cliente0" dst="server2">
+      <link_ctn id="link2"/>
+    </route>
+    <route src="cliente1" dst="server2">
+      <link_ctn id="link2"/>
+    </route>
+    <route src="cliente2" dst="server2">
+      <link_ctn id="link2"/>
+    </route>
+    <route src="cliente3" dst="server2">
+      <link_ctn id="link2"/>
+    </route>
+
+    <route src="cliente0" dst="server3">
+      <link_ctn id="link3"/>
+    </route>
+    <route src="cliente1" dst="server3">
+      <link_ctn id="link3"/>
+    </route>
+    <route src="cliente2" dst="server3">
+      <link_ctn id="link3"/>
+    </route>
+    <route src="cliente3" dst="server3">
+      <link_ctn id="link3"/>
+    </route>
+  </zone>
+</platform>

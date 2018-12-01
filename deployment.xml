@@ -1,0 +1,18 @@
+<?xml version='1.0'?>
+<!DOCTYPE platform SYSTEM "http://simgrid.gforge.inria.fr/simgrid/simgrid.dtd">
+<platform version="4.1">
+
+  <actor host="cliente3" function="request">
+    <argument value="server0"/>
+  </actor>
+  <actor host="cliente1" function="request">
+    <argument value="server1"/>
+  </actor>
+  <actor host="cliente2" function="request">
+    <argument value="server2"/>
+  </actor>
+  <actor host="cliente0" function="request">
+    <argument value="server0"/>
+  </actor>
+
+</platform>
