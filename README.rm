@@ -1,1 +1,6 @@
-Repositório para o uso durante a iniciação cientifica. 
+Repositório para o uso durante a iniciação cientifica.
+
+Utilize o comando make para criar o executavel do programa, é nescessario um programa main.cpp e ele criara um executavel main
+
+pode ocorrer um erro no momento da execução e a biblioteca não ser encontrada para o link, assim rode o seguinte comando para resolver:
+export LD_LIBRARY_PATH=/opt/simgrid/lib
