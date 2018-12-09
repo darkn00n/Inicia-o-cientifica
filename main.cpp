@@ -4,7 +4,7 @@
 #include <iostream>//biblioteca para entrada e saida padrão do C++
 
 //cria um canal para obter informações desse exemplo
-XBT_LOG_NEW_DEFAULT_CATEGORY(main_primeiro_teste, "O canal do XBT para este projeto");
+XBT_LOG_NEW_DEFAULT_CATEGORY(main, "O canal do XBT para este projeto");
 
 using namespace simgrid::s4u;//facilita a escrita do codigo, ja que quase
                             //todas as funções usam esse namespace
@@ -73,6 +73,18 @@ static void request(vector<string> args)
 {
   XBT_INFO("entrei na request vindo do cliente %s para o servidor %s.",this_actor::get_host()->get_cname(),args[1].c_str());
 
+  XBT_INFO("dormirei até meu tempo certo, que é %s",args[2].c_str());
+
+  //pega o tempo atual da simulação
+  double *aux = new double;
+  *aux = Engine::get_clock();
+
+  //o tempo nescessario para que o ator comece a funcionar no tempo recebido no parametro args[2]
+  double time_sleep = strtol(args[2].c_str(),NULL,10) - *aux;
+
+  //coloca o ator para dormir até chegar o tempo especificado no xml
+  this_actor::sleep_for(time_sleep);
+
   //cria o nome da minha Mailbox
   string name = string("Mailbox-")+args[1];
 
@@ -90,7 +102,7 @@ static void request(vector<string> args)
   mailbox->set_receiver(Actor::create(args[1],Host::by_name(args[1]),answer, str1));
 
   //envio um pacote com x bytes para requisitar um objeto.
-  mailbox->put(new string(name),100);
+  mailbox->put(new string(name),1);
 
   this_actor::exit();//mata o ator
 }

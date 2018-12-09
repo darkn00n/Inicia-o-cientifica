@@ -1,0 +1,14 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/darkn00n/Dropbox/Faculdade/iniciação cientifica/git/main.cpp
+simgrid/s4u.hpp
+-
+string
+-
+

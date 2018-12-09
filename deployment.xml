@@ -4,15 +4,19 @@
 
   <actor host="cliente3" function="request">
     <argument value="server0"/>
+    <argument value="1"/><!--usado para saber quando a transferencia deve ccomeçar-->
   </actor>
   <actor host="cliente1" function="request">
     <argument value="server1"/>
+    <argument value="4"/>
   </actor>
   <actor host="cliente2" function="request">
     <argument value="server2"/>
+    <argument value="10"/>
   </actor>
   <actor host="cliente0" function="request">
-    <argument value="server0"/>
+    <argument value="server3"/>
+    <argument value="15"/>
   </actor>
 
 </platform>

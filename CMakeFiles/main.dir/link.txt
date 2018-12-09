@@ -1,0 +1,1 @@
+/usr/bin/c++   -std=c++11  -rdynamic CMakeFiles/main.dir/main.cpp.o  -o main -Wl,-rpath,/opt/simgrid/lib /opt/simgrid/lib/libsimgrid.so.3.21 /opt/simgrid/lib/libsimgrid.so 

@@ -1,0 +1,3 @@
+/home/darkn00n/Dropbox/Faculdade/iniciação cientifica/git/CMakeFiles/rebuild_cache.dir
+/home/darkn00n/Dropbox/Faculdade/iniciação cientifica/git/CMakeFiles/main.dir
+/home/darkn00n/Dropbox/Faculdade/iniciação cientifica/git/CMakeFiles/edit_cache.dir
