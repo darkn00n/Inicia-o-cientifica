@@ -7,6 +7,8 @@
     <host	id="server2"	speed="100Mf"/>
     <host	id="server3"	speed="100Mf"/>
 
+    <host id="middleserver" speed="1000000Mf"/>
+
     <host	id="cliente0"	speed="10Mf"/>
     <host	id="cliente1"	speed="10Mf"/>
     <host id="cliente2"	speed="10Mf"/>
@@ -16,60 +18,36 @@
     <link	id="link2" bandwidth="1Bps" latency="0.0"/>
     <link	id="link1" bandwidth="1Bps" latency="0.0"/>
     <link	id="link3" bandwidth="1Bps" latency="0.0"/>
+    <link	id="link4" bandwidth="1Bps" latency="0.0"/>
     <link	id="link5" bandwidth="1Bps" latency="0.0"/>
     <link	id="link6" bandwidth="1Bps" latency="0.0"/>
+    <link	id="link7" bandwidth="1Bps" latency="0.0"/>
 
-    <route src="cliente0"	dst="server0">
+    <route src="cliente0"	dst="middleserver">
+      <link_ctn id="link0"/>
+    </route>
+    <route src="cliente1" dst="middleserver">
+      <link_ctn id="link1"/>
+    </route>
+    <route src="cliente2" dst="middleserver">
+      <link_ctn id="link2"/>
+    </route>
+    <route src="cliente3" dst="middleserver">
+      <link_ctn id="link3"/>
+    </route>
+
+    <route src="server0" dst="middleserver">
+      <link_ctn id="link4"/>
+    </route>
+    <route src="server1" dst="middleserver">
       <link_ctn id="link5"/>
     </route>
-    <route src="cliente1" dst="server0">
-      <link_ctn id="link0"/>
-    </route>
-    <route src="cliente2" dst="server0">
-      <link_ctn id="link0"/>
-    </route>
-    <route src="cliente3" dst="server0">
-      <link_ctn id="link0"/>
+    <route src="server2" dst="middleserver">
       <link_ctn id="link6"/>
     </route>
-
-    <route src="cliente0" dst="server1">
-      <link_ctn id="link1"/>
-    </route>
-    <route src="cliente1" dst="server1">
-      <link_ctn id="link1"/>
-    </route>
-    <route src="cliente2" dst="server1">
-      <link_ctn id="link1"/>
-    </route>
-    <route src="cliente3" dst="server1">
-      <link_ctn id="link1"/>
+    <route src="server3" dst="middleserver">
+      <link_ctn id="link7"/>
     </route>
 
-    <route src="cliente0" dst="server2">
-      <link_ctn id="link2"/>
-    </route>
-    <route src="cliente1" dst="server2">
-      <link_ctn id="link2"/>
-    </route>
-    <route src="cliente2" dst="server2">
-      <link_ctn id="link2"/>
-    </route>
-    <route src="cliente3" dst="server2">
-      <link_ctn id="link2"/>
-    </route>
-
-    <route src="cliente0" dst="server3">
-      <link_ctn id="link3"/>
-    </route>
-    <route src="cliente1" dst="server3">
-      <link_ctn id="link3"/>
-    </route>
-    <route src="cliente2" dst="server3">
-      <link_ctn id="link3"/>
-    </route>
-    <route src="cliente3" dst="server3">
-      <link_ctn id="link3"/>
-    </route>
   </zone>
 </platform>
