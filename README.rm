@@ -4,3 +4,6 @@ Utilize o comando make para criar o executavel do programa, é nescessario um pr
 
 pode ocorrer um erro no momento da execução e a biblioteca não ser encontrada para o link, assim rode o seguinte comando para resolver:
 export LD_LIBRARY_PATH=/opt/simgrid/lib
+
+A pasta arquivos, é onde ficam arquivos nescessarios para o programa funcionar, no momento existe o "objetos.txt" que indica em qual servidor
+está o objeto requerido pelo cliente.
