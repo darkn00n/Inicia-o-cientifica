@@ -6,4 +6,4 @@ pode ocorrer um erro no momento da execução e a biblioteca não ser encontrada
 export LD_LIBRARY_PATH=/opt/simgrid/lib
 
 A pasta arquivos, é onde ficam arquivos nescessarios para o programa funcionar, no momento existe o "objetos.txt" que indica em qual servidor
-está o objeto requerido pelo cliente.
+está o objeto requerido pelo cliente e contem os arquivos dos servidores, onde indica o tamanho de cada objeto dentro do servidor que tem o mesmo nome do arquivo.
