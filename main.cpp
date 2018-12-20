@@ -18,6 +18,8 @@ using namespace std;//idem anterior
 
 //um vetor que ira representar onde esta os objetos. a coluna 0 é o objeto e a coluna 1 é o seu servidor.
 int *objetos;
+
+//tamanho do vetor de objetos.
 int tam;
 
 static void middleServer(vector<string> args);
@@ -25,6 +27,7 @@ static void middleServerReception(vector<string> args);
 static void reception(vector<string> args);
 static void answer(vector<string> args);
 static void request(vector<string> args);
+int* leObjetosSer(string servidor,int &quant);
 
 //utilizado somente para inicar as funções da simulação.
 int main(int argc, char** argv)
@@ -99,10 +102,10 @@ static void middleServerReception(vector<string> args)
 
   XBT_INFO("enviando o objeto %s para o %s",msg->c_str(),args[2].c_str());
   //cria um actor para o envio do objeto.
-  mailbox->set_receiver(Actor::create(args[2],Host::by_name(args[2]),reception,str1));
+  mailbox->set_receiver(Actor::create("reception",Host::by_name(args[2]),reception,str1));
 
   //envio dos objetos.
-  mailbox->put(new string(*msg),1);
+  mailbox->put(new string(*msg),strtol(args[3].c_str(),NULL,10));
 
   str1.clear();//limpa o vector
   this_actor::exit();//mata o ator
@@ -145,7 +148,7 @@ static void middleServer(vector<string> args)
   XBT_INFO("enviando a requisição do objeto %d para o servidor %s vinda de %s",objeto_requerido,name.c_str(),args[1].c_str());
 
   //cria um actor para o envio do objeto.
-  mailbox->set_receiver(Actor::create(name,Host::by_name(name),answer,str1));
+  mailbox->set_receiver(Actor::create("answer",Host::by_name(name),answer,str1));
 
   //envio dos objetos.
   mailbox->put(new string(*msg),1);
@@ -178,24 +181,41 @@ static void answer(vector<string> args)
   XBT_INFO("entrei no servidor %s e enviarei o objeto para o servidor central",args[1].c_str());
 
 
-  //cria um vector de strings (template) e preenche com as informações nescessarias para cirar os atores do servidor
+  //cria um vector de strings (template) e preenche com as informações nescessarias para criar os atores do servidor
   vector<string> str1;
 
   //string usada para receber a mensagem da mailbox
   string *msg;
   msg = static_cast<string*>(mailbox->get());
 
-  XBT_INFO("O objeto recebida foi: %s.",msg->c_str());
+  XBT_INFO("O objeto requerido foi: %s.",msg->c_str());
+
+  //o vetor que vai ser utilizado como uma matriz 2x2 para dizer o tamanho do objetorequerido.
+  int* tamanhos;
+  int quant=0;//quantidade de objetos
+  tamanhos = leObjetosSer(args[1],quant);
+  int tamanho_objeto;
+  int objeto_requerido = strtol(msg->c_str(),NULL,10);
+
+  for (int i = 0; i < quant; i++) {
+    if(MA(tamanhos,i,0,2) == objeto_requerido)
+    {
+      printf("%d\n",MA(tamanhos,i,1,2));
+      tamanho_objeto = MA(tamanhos,i,1,2);
+      break;
+    }
+  }
 
   str1.push_back(args[0]);//passa o nome da mailbox para args[0]
   str1.push_back(args[1]);//passa o nome do servidor para args[1]
   str1.push_back(args[2]);//passa o nome do cliente para args[2]
+  str1.push_back(to_string(tamanho_objeto));//passa o tamanho do objeto para args[3];
 
   //cria um actor para o envio do objeto.
-  mailbox->set_receiver(Actor::create("middleServer",Host::by_name("middleserver"),middleServerReception,str1));
+  mailbox->set_receiver(Actor::create("middleServerReception",Host::by_name("middleserver"),middleServerReception,str1));
 
   //envio dos objetos.
-  mailbox->put(new string("o objeto"),1);
+  mailbox->put(new string("o objeto"),tamanho_objeto);
 
   str1.clear();//limpa o vector
   this_actor::exit();//mata o ator
@@ -229,13 +249,45 @@ static void request(vector<string> args)
   str1.push_back(name);//Passa o nome da mailbox para args[0]
   str1.push_back(this_actor::get_host()->get_name());//passa o nome do cliente para args[1]
 
-
   //cria um actor para o servido central que realizara a resposta.
-  mailbox->set_receiver(Actor::create("middle",Host::by_name("middleserver"),middleServer, str1));
+  mailbox->set_receiver(Actor::create("middleServer",Host::by_name("middleserver"),middleServer, str1));
 
   //envio um pacote com x bytes para requisitar um objeto.
-  mailbox->put(new string(args[1]),1);
+  mailbox->put(new string(args[1]),1.0);
 
   str1.clear();//limpa o vector
   this_actor::exit();//mata o ator
+}
+
+int* leObjetosSer(string servidor,int &quant)
+{
+  int* tamanhos;
+
+  ifstream obj("arquivos/"+servidor+".txt");
+
+  int bufer;
+  char aux;
+  int lin = 0;
+
+  //descobre quantos objetos tem.
+  while(obj >> aux)
+  {
+    lin++;
+  }
+  lin /= 2;
+  obj.clear();
+  obj.seekg(0);
+  quant = lin;//quant é uma variavel para saber a quantidade de objetos.
+  tamanhos  = new int[lin*2];
+  int j = 0;
+
+  //le os objetos e seus tamanhos.
+  while(obj >> bufer)
+  {
+    tamanhos[j] = bufer;
+    j++;
+  }
+  obj.close();
+
+  return tamanhos;
 }
