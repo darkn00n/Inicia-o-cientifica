@@ -16,14 +16,7 @@ using namespace std;//idem anterior
 //define usado para tratar o vetor como uma matriz.
 #define MA(A,i,j,tam_col) A[i*tam_col + j]
 
-//um vetor que ira representar onde esta os objetos. a coluna 0 é o objeto e a coluna 1 é o seu servidor.
-int *objetos;
-
-//tamanho do vetor de objetos.
-int tam;
-
 static void middleServer(vector<string> args);
-static void middleServerReception(vector<string> args);
 static void reception(vector<string> args);
 static void answer(vector<string> args);
 static void request(vector<string> args);
@@ -36,31 +29,6 @@ int main(int argc, char** argv)
   {
     cout << "O programa espera um arquivo de plataforma e um arquivo de deployment" << endl;
     exit(1);
-  }
-
-  ifstream obj("arquivos/objetos.txt");
-
-  int bufer;
-  char aux;
-  int lin = 0;
-
-  //descobre quantos objetos tem.
-  while(obj >> aux)
-  {
-    lin++;
-  }
-  lin /= 2;
-  obj.clear();
-  obj.seekg(0);
-  tam = lin;//tam é uma variavel global para saber a quantidade de objetos.
-  objetos = new int[lin*2];
-  int j = 0;
-
-  //le os objetos e seus servidores.
-  while(obj >> bufer)
-  {
-    objetos[j] = bufer;
-    j++;
   }
 
   Engine e(&argc,argv);//cria a base da simulacao
@@ -76,40 +44,6 @@ int main(int argc, char** argv)
   e.run();//roda a simulacao
   return 0;
 }
-//funciona como a resposta do servidor central para o cliente
-static void middleServerReception(vector<string> args)
-{
-  MailboxPtr mailbox = Mailbox::by_name(args[0]);//cria uma mailbox que
-                                                //serve para receber e mandar a mensagem.
-  XBT_INFO("entrei no servidor central para enviar para %s",args[2].c_str());
-
-  //string usada para receber a mensagem da mailbox
-  string *msg;
-  msg = static_cast<string*>(mailbox->get());
-
-  args[0] = string("Mailbox-") + args[2];
-
-  XBT_INFO("O objeto requerido foi: %s.",msg->c_str());
-
-  //cria um vector de strings (template) e preenche com as informações nescessarias para cirar os atores do servidor
-  vector<string> str1;
-  str1.push_back(args[0]);//Passa o nome da mailbox para args[0]
-  str1.push_back(args[1]);//passa o nome do servidor para args[1]
-  str1.push_back(args[2]);//passa o nome do cliente para args[2]
-
-
-  mailbox = Mailbox::by_name(args[0]);
-
-  XBT_INFO("enviando o objeto %s para o %s",msg->c_str(),args[2].c_str());
-  //cria um actor para o envio do objeto.
-  mailbox->set_receiver(Actor::create("reception",Host::by_name(args[2]),reception,str1));
-
-  //envio dos objetos.
-  mailbox->put(new string(*msg),strtol(args[3].c_str(),NULL,10));
-
-  str1.clear();//limpa o vector
-  this_actor::exit();//mata o ator
-}
 
 //funciona como o servidor central, que direciona para os demais servidores.
 static void middleServer(vector<string> args)
@@ -118,6 +52,12 @@ static void middleServer(vector<string> args)
                                                 //serve para receber e mandar a mensagem.
   XBT_INFO("entrei no servidor central");
 
+  //um vetor que ira representar onde esta os objetos. a coluna 0 é o objeto e a coluna 1 é o seu servidor.
+  int* objetos;
+  //tamanho do vetor de objetos.
+  int tam=0;
+
+  objetos = leObjetosSer(string("objetos"),tam);
 
   //string usada para receber a mensagem da mailbox
   string *msg;
@@ -178,7 +118,7 @@ static void answer(vector<string> args)
 {
   MailboxPtr mailbox = Mailbox::by_name(args[0]);//cria uma mailbox que
                                                 //serve para receber e mandar a mensagem.
-  XBT_INFO("entrei no servidor %s e enviarei o objeto para o servidor central",args[1].c_str());
+  XBT_INFO("entrei no servidor %s e enviarei o objeto para o cliente %s",args[1].c_str(),args[2].c_str());
 
 
   //cria um vector de strings (template) e preenche com as informações nescessarias para criar os atores do servidor
@@ -187,8 +127,6 @@ static void answer(vector<string> args)
   //string usada para receber a mensagem da mailbox
   string *msg;
   msg = static_cast<string*>(mailbox->get());
-
-  XBT_INFO("O objeto requerido foi: %s.",msg->c_str());
 
   //o vetor que vai ser utilizado como uma matriz 2x2 para dizer o tamanho do objetorequerido.
   int* tamanhos;
@@ -200,11 +138,12 @@ static void answer(vector<string> args)
   for (int i = 0; i < quant; i++) {
     if(MA(tamanhos,i,0,2) == objeto_requerido)
     {
-      printf("%d\n",MA(tamanhos,i,1,2));
       tamanho_objeto = MA(tamanhos,i,1,2);
       break;
     }
   }
+
+  XBT_INFO("O objeto requerido foi: %s que tem %d Bytes de tamanho",msg->c_str(),tamanho_objeto);
 
   str1.push_back(args[0]);//passa o nome da mailbox para args[0]
   str1.push_back(args[1]);//passa o nome do servidor para args[1]
@@ -212,7 +151,7 @@ static void answer(vector<string> args)
   str1.push_back(to_string(tamanho_objeto));//passa o tamanho do objeto para args[3];
 
   //cria um actor para o envio do objeto.
-  mailbox->set_receiver(Actor::create("middleServerReception",Host::by_name("middleserver"),middleServerReception,str1));
+  mailbox->set_receiver(Actor::create("reception",Host::by_name(args[2]),reception,str1));
 
   //envio dos objetos.
   mailbox->put(new string("o objeto"),tamanho_objeto);
