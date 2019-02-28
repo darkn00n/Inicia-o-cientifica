@@ -2,8 +2,8 @@
 #include <simgrid/s4u.hpp>//biblioteca do SimGrid
 #include <string>//biblioteca para usar funcoes de string
 #include <iostream>//biblioteca para entrada e saida padrão do C++
-#include <fstream>//biblioteca do C++ para eitura de arquivos
-#include <vector>
+#include <fstream>//biblioteca do C++ para leitura de arquivos
+#include <vector>//biblioteca do C++ para controle de vetores
 
 //cria um canal para obter informações desse exemplo
 XBT_LOG_NEW_DEFAULT_CATEGORY(main, "O canal do XBT para este projeto");
@@ -13,19 +13,29 @@ using namespace simgrid::s4u;//facilita a escrita do codigo, ja que quase
 
 using namespace std;//idem anterior
 
+//um vetor que ira representar onde esta os objetos.a coluna 0 e o tempo que comeca a valer aquela informacao, a coluna 1 he o objeto e a coluna 2 he o seu servidor.
+int* tabela;
+//tamanho da tabela.
+int tam_tabela;
+
+//o vetor que vai ser utilizado como uma matriz 2x2 para dizer o tamanho do objetorequerido.
+int* objetos;
+//tamanho de objetos;
+int tam_objetos;
+
 //define usado para tratar o vetor como uma matriz.
-#define MA(A,i,j,tam_col) A[i*tam_col + j]
+#define MA(A,tam_col,i,j) A[i*tam_col + j]
 
 static void middleServer(vector<string> args);
 static void reception(vector<string> args);
 static void answer(vector<string> args);
 static void request(vector<string> args);
-int* leObjetosSer(string servidor,int &quant);
+int* learquivos(string arquivo,int &quant,int col);
 
 //utilizado somente para inicar as funções da simulação.
 int main(int argc, char** argv)
 {
-  if(argc != 3)
+  if(argc != 3)//verfica se os arquivos necessarios para o programa foram inseridos
   {
     cout << "O programa espera um arquivo de plataforma e um arquivo de deployment" << endl;
     exit(1);
@@ -34,12 +44,15 @@ int main(int argc, char** argv)
   Engine e(&argc,argv);//cria a base da simulacao
 
   e.register_function("request", &request);//registra a função para ser utilizada na simulação
-  e.register_function("answer", &answer);
-  e.register_function("reception", &reception);
-  e.register_function("middleserver",&middleServer);
+  e.register_function("answer", &answer);//registra a função para ser utilizada na simulação
+  e.register_function("reception", &reception);//registra a função para ser utilizada na simulação
+  e.register_function("middleserver",&middleServer);//registra a função para ser utilizada na simulação
 
   e.load_platform(argv[1]);//carrega a plataforma usada
   e.load_deployment(argv[2]);//le o arquivo xml com os atores
+
+  tabela = learquivos(string("tabela"),tam_tabela,3);//le em qual//terminar de comentar
+  objetos = learquivos(string("objetos"),tam_objetos,2);//comentar
 
   e.run();//roda a simulacao
   return 0;
@@ -52,38 +65,36 @@ static void middleServer(vector<string> args)
                                                 //serve para receber e mandar a mensagem.
   XBT_INFO("entrei no servidor central");
 
-  //um vetor que ira representar onde esta os objetos. a coluna 0 é o objeto e a coluna 1 é o seu servidor.
-  int* objetos;
-  //tamanho do vetor de objetos.
-  int tam=0;
-
-  objetos = leObjetosSer(string("objetos"),tam);
-
   //string usada para receber a mensagem da mailbox
   string *msg;
-  msg = static_cast<string*>(mailbox->get());
-  int objeto_requerido = strtol(msg->c_str(),NULL,10);
-  string name;
+  msg = static_cast<string*>(mailbox->get());//recebe a mensagem da mailbox e "casta" para uma string
+
+  int objeto_requerido = strtol(msg->c_str(),NULL,10);//transforma a mensagem em um inteiro(primeiro a string vira um vetor de char e depois um inteiro)
+
+  string name;//string para amarzenar o nome do servido da requisicao
 
   XBT_INFO("O objeto requerido foi: %d.",objeto_requerido);
 
-  for (int i = 0; i < tam; i++) {
-    if(MA(objetos,i,0,2) == objeto_requerido)
+  //pesquisa na tabela global com todos os servidores e seus objetos para saber onde o objeto requerido esta
+  for (int i = 0; i < tam_tabela; i++){
+    if(MA(tabela,3,i,1) == objeto_requerido)//na tabela que tem 3 colunas na linha i na posição 1 he igual ao objeto_requerido?
     {
-      name = string("server") + to_string( MA(objetos,i,1,2) );
-      break;
+      name = string("server") + to_string( MA(tabela,3,i,2) );//se sim cria o nome juntando server com o id do servidor
+      break;//se achou não he nescessario continuar e sai do loop
     }
   }
 
   //atualiza a mailbox, para enviar para o servidor certo.
   args[0] = string("Mailbox-")+name;
-  mailbox = Mailbox::by_name(args[0]);
 
   //cria um vector de strings (template) e preenche com as informações nescessarias para cirar os atores do servidor
   vector<string> str1;
   str1.push_back(args[0]);//Passa o nome da mailbox para args[0]
   str1.push_back(name);//passa o nome do servidor para args[1]
   str1.push_back(args[1]);//passa o nome do cliente para args[2]
+
+  mailbox = Mailbox::by_name(args[0]);//ajusta a mailbox para a nova que sera utilizada
+                                      // entre servidor central e servidor com o objeto
 
   XBT_INFO("enviando a requisição do objeto %d para o servidor %s vinda de %s",objeto_requerido,name.c_str(),args[1].c_str());
 
@@ -101,6 +112,7 @@ static void middleServer(vector<string> args)
 static void reception(vector<string> args)
 {
   XBT_INFO("entrei no cliente %s e estou recebendo o objeto do servidor %s",args[2].c_str(),args[1].c_str());
+
   //cria uma mailbox para comunicar entre o servidor e o cliente, servindo de recepção do objeto.
   MailboxPtr mailbox = simgrid::s4u::Mailbox::by_name(args[0]);
 
@@ -118,27 +130,24 @@ static void answer(vector<string> args)
 {
   MailboxPtr mailbox = Mailbox::by_name(args[0]);//cria uma mailbox que
                                                 //serve para receber e mandar a mensagem.
+
   XBT_INFO("entrei no servidor %s e enviarei o objeto para o cliente %s",args[1].c_str(),args[2].c_str());
 
-
+  //variavel usado para armazenar o tamanho do objeto
+  int tamanho_objeto;
   //cria um vector de strings (template) e preenche com as informações nescessarias para criar os atores do servidor
   vector<string> str1;
 
   //string usada para receber a mensagem da mailbox
   string *msg;
-  msg = static_cast<string*>(mailbox->get());
+  msg = static_cast<string*>(mailbox->get());//recebe a mensagem da mailbox e "casta" para uma string
 
-  //o vetor que vai ser utilizado como uma matriz 2x2 para dizer o tamanho do objetorequerido.
-  int* tamanhos;
-  int quant=0;//quantidade de objetos
-  tamanhos = leObjetosSer(args[1],quant);
-  int tamanho_objeto;
-  int objeto_requerido = strtol(msg->c_str(),NULL,10);
+  int objeto_requerido = strtol(msg->c_str(),NULL,10);//transforma o id do objeto em inteiro.
 
-  for (int i = 0; i < quant; i++) {
-    if(MA(tamanhos,i,0,2) == objeto_requerido)
+  for (int i = 0; i < tam_objetos; i++) {
+    if(MA(objetos,2,i,0) == objeto_requerido)
     {
-      tamanho_objeto = MA(tamanhos,i,1,2);
+      tamanho_objeto = MA(objetos,2,i,1);
       break;
     }
   }
@@ -192,32 +201,34 @@ static void request(vector<string> args)
   mailbox->set_receiver(Actor::create("middleServer",Host::by_name("middleserver"),middleServer, str1));
 
   //envio um pacote com x bytes para requisitar um objeto.
-  mailbox->put(new string(args[1]),1.0);
+  mailbox->put(new string(args[1]),1);
 
   str1.clear();//limpa o vector
   this_actor::exit();//mata o ator
 }
 
-int* leObjetosSer(string servidor,int &quant)
+//le os tamanhos do objetos e os deixa em memoria, a variavel col deve indicar quantas colunas o arquivo tem.
+int* learquivos(string arquivo,int &quant,int col)
 {
   int* tamanhos;
 
-  ifstream obj("arquivos/"+servidor+".txt");
+  //cria um objeto que representa o arquivo
+  ifstream obj("arquivos/"+arquivo+".txt");
 
+  //utilizado para receber um inteiro de cada vez na interacao
   int bufer;
-  char aux;
+
+  //numero de linhas do arquivo
   int lin = 0;
 
   //descobre quantos objetos tem.
-  while(obj >> aux)
-  {
-    lin++;
-  }
-  lin /= 2;
-  obj.clear();
-  obj.seekg(0);
+  obj >> lin;
+
   quant = lin;//quant é uma variavel para saber a quantidade de objetos.
-  tamanhos  = new int[lin*2];
+
+  //um vetor que é usado como matriz
+  tamanhos  = new int[lin*col];
+
   int j = 0;
 
   //le os objetos e seus tamanhos.
