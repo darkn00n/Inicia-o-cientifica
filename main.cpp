@@ -51,8 +51,8 @@ int main(int argc, char** argv)
   e.load_platform(argv[1]);//carrega a plataforma usada
   e.load_deployment(argv[2]);//le o arquivo xml com os atores
 
-  tabela = learquivos(string("tabela"),tam_tabela,3);//le em qual//terminar de comentar
-  objetos = learquivos(string("objetos"),tam_objetos,2);//comentar
+  tabela = learquivos(string("tabela"),tam_tabela,3);//le o arquivo que indica o tempo em que cada objeto fica em qual servidor.
+  objetos = learquivos(string("objetos"),tam_objetos,2);//le o arquivo que indica o tamanho de cada objeto
 
   e.run();//roda a simulacao
   return 0;
