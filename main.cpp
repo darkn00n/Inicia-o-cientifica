@@ -14,23 +14,34 @@ using namespace simgrid::s4u;//facilita a escrita do codigo, ja que quase
 using namespace std;//idem anterior
 
 //um vetor que ira representar onde esta os objetos.a coluna 0 e o tempo que comeca a valer aquela informacao, a coluna 1 he o objeto e a coluna 2 he o seu servidor.
-int* tabela;
+int* tabela = NULL;
 //tamanho da tabela.
-int tam_tabela;
+int tam_tabela = 0;
+//indica o começo da tabela para o tempo atual
+int ini_tabela = 0;
+//indica o final da tabela para o tempo atual
+int fim_tabela = 0;
 
-//o vetor que vai ser utilizado como uma matriz 2x2 para dizer o tamanho do objetorequerido.
-int* objetos;
+//o vetor que vai ser utilizado como uma matriz 2x2 para dizer o tamanho do objeto requerido.
+int* objetos = NULL;
 //tamanho de objetos;
-int tam_objetos;
+int tam_objetos = 0;
+
+//dois ponteiros que seram usados como vetores para melhor tratamento dos objetos e servidores no intervalo de tempo certo.
+int* tamanhos = NULL;//indica quando servidores tem em cada linha do proximo vetor;
+int** redirection = NULL;//a primeira posição indica qual o ID do objeto as proximas indicam os servidores que tem esse objeto e a ultima indica qual o proxima a ser usado;
+int tam_redirection = 0;//para saber o final dos objetos.
 
 //define usado para tratar o vetor como uma matriz.
-#define MA(A,tam_col,i,j) A[i*tam_col + j]
+#define MA(A,tam_col,i,j) A[(i)*tam_col + j]
 
 static void middleServer(vector<string> args);
 static void reception(vector<string> args);
 static void answer(vector<string> args);
 static void request(vector<string> args);
 int* learquivos(string arquivo,int &quant,int col);
+void fit_redirection(bool status);
+void fit_info_tabela(void);
 
 //utilizado somente para inicar as funções da simulação.
 int main(int argc, char** argv)
@@ -54,6 +65,11 @@ int main(int argc, char** argv)
   tabela = learquivos(string("tabela"),tam_tabela,3);//le o arquivo que indica o tempo em que cada objeto fica em qual servidor.
   objetos = learquivos(string("objetos"),tam_objetos,2);//le o arquivo que indica o tamanho de cada objeto
 
+  //atualiza o final da tabela na primeira vez que é necessaria.
+  fit_info_tabela();
+
+  fit_redirection(true);//cria a estrutura auxiliar para redirecionamento.
+
   e.run();//roda a simulacao
   return 0;
 }
@@ -75,11 +91,30 @@ static void middleServer(vector<string> args)
 
   XBT_INFO("O objeto requerido foi: %d.",objeto_requerido);
 
-  //pesquisa na tabela global com todos os servidores e seus objetos para saber onde o objeto requerido esta
-  for (int i = 0; i < tam_tabela; i++){
-    if(MA(tabela,3,i,1) == objeto_requerido)//na tabela que tem 3 colunas na linha i na posição 1 he igual ao objeto_requerido?
+  //verifica o momento atual e se é necessario atualizar as tabelas para verificacao dos lugares
+  int actual_time = Engine::get_clock();//momento atual dentro da simulacao
+
+  //verifica se o tempo atual já passou do tempo que esta nas instancias atuais e chama a funcao que modifica a redirection
+  if(fim_tabela != 0 && fim_tabela != tam_tabela && MA(tabela,3,fim_tabela,0) <= actual_time)
+  {
+    fit_info_tabela();
+    fit_redirection(false);
+  }
+
+  int posicao;//serve como auxiliar para a pesquisa de redirecionamento.
+
+  //procura em redirection qual o servidor deve ser enviada a requisicao
+  for(int i = 0; i < tam_redirection; i++){
+    if(redirection[i][0] == objeto_requerido)//verifico se o ID é igual ao objeto requerido
     {
-      name = string("server") + to_string( MA(tabela,3,i,2) );//se sim cria o nome juntando server com o id do servidor
+      posicao = redirection[i][tamanhos[i] + 1];//pega a posicao que tem o servidor a ser usado.
+      name = string("server") + to_string( redirection[i][posicao] );//pega o servidor que deve ser usado para a requisicao
+      if(posicao == tamanhos[i])//se estiver na ultima posicao volta para a primeira.
+      {
+          redirection[i][tamanhos[i] + 1] = 1;
+      }
+      else redirection[i][tamanhos[i] + 1]++;//se nao aumenta para a proxima.
+
       break;//se achou não he nescessario continuar e sai do loop
     }
   }
@@ -240,4 +275,118 @@ int* learquivos(string arquivo,int &quant,int col)
   obj.close();
 
   return tamanhos;
+}
+
+//atualiza os vetores redirection e tamanhos, status == True indica que é o momento de prencher as estruturas pela primeira vez.
+void fit_redirection(bool status)
+{
+  int* alfabeto = new int[fim_tabela - ini_tabela];//auxilia como um limite superior de todos os possiveis objetos.
+  int* quant_alfabeto = new int[fim_tabela - ini_tabela];//vetor para já pegar a quantidade durante o teste de alfabeto
+  int ultimo = 0;//variavel para saber o final do alfabeto atual
+  bool igual = false;//variavel para saber se o objeto atual esta no alfabeto já lido.
+  int posicao = 1;//auxiliar para facilitar a leitura do codigo, utilizada para saber a posicao que sera colocado o servidor na redirection.
+
+  //inicializa com valores pradao os vetores.(utilizo -1 pq esta fora do alfabeto)
+  for(size_t i = 0; i < fim_tabela - ini_tabela; i++)
+  {
+      alfabeto[i] = -1;
+      quant_alfabeto[i] = 0;
+  }
+
+  //percorro toda a instancia atual da tabela.
+  for(size_t i = ini_tabela; i < fim_tabela; i++)
+  {
+    //para cada posicao da atual instancia da tabela eu percorro a te o final atual do meu vetor alfabeto.
+    for (size_t j = 0; j < ultimo; j++)
+    {
+      //para cada posicao do alfabeto eu verifico se o objeto novo esta dentro do meu alfabeto
+      //se estiver eu ativo a flag aumento a quantidade de vezes que aparece e saio.
+      if(alfabeto[j] == MA(tabela,3,i,1))
+      {
+          igual = true;
+          quant_alfabeto[j]++;
+          break;
+      }
+    }
+    //se a flag estiver como falsa, ou seja, nao tem igual eu adiciono o objeto no alfabeto
+    //incremento o final do alfabeto
+    //e aumento a quantidade de vezes que o objeto aparece
+    if(!igual)
+    {
+      alfabeto[ultimo] = MA(tabela,3,i,1);
+      quant_alfabeto[ultimo]++;
+      ultimo++;
+    }
+    igual = false;//zera a tag para recomecar
+  }
+
+  tam_redirection = ultimo;
+
+  //se nao for a primeira vez preciso liberar a memoria
+  if(!status)
+  {
+      free(tamanhos);
+      for(size_t i = 0; i < tam_redirection; i++)
+      {
+        free(redirection[i]);
+      }
+      free(redirection);
+  }
+
+  tamanhos = new int[ultimo];//cria o vetor com a quantidade de objetos.
+  redirection = new int*[ultimo];//cria os espacos para armazenar o id do objeto + os servidores que tem ele + o proximo servidor a ser usado.
+
+  //inicializa os vetores e ao mesmo tempo cria as linhas em redirection.
+  for(size_t i = 0; i < ultimo; i++)
+  {
+    tamanhos[i] = quant_alfabeto[i];//guarda na variavel global as quantidades de servidores para cada objeto
+    redirection[i] = new int[quant_alfabeto[i] + 2];//cria o espaço para caber o ID + os servidores + proxima posicao a usar
+    redirection[i][0] = alfabeto[i];//insere o ID.
+    redirection[i][tamanhos[i] + 1] = 1;//inicializa a posicao proximo a usar como o primeiro servidor, é utilizado para preencher os sevidores no proximo loop.
+  }
+
+  //percorre toda a tabela na instancia atual
+  for(size_t i = ini_tabela; i < fim_tabela; i++)
+  {
+    //para cada par objeto servidor na instancia eu percorro toda a redirection
+    for(size_t j = 0; j < ultimo; j++)
+    {
+      //verifico se o ID é igual ao objeto na estrutura tabela
+      //se for igual eu adiciono o servidor na proxima posicao livre
+      //a posicao livre é encontrada na ultima posicao da linha de redirection
+      if(MA(tabela,3,i,1) == redirection[j][0])
+      {
+        posicao = redirection[j][tamanhos[j] + 1];//pega a proxima posicao nao preenchida em redirection[j]
+        redirection[j][posicao] = MA(tabela,3,i,2);//preenche a posicao nao inicializada.
+        redirection[j][tamanhos[j] + 1]++;//atualiza para manter a proxima posicao atualizada no final de redirection[j]
+        break;
+      }
+    }
+  }
+
+  //percorre redirection para concertar o valor do proximo servidor a ser usado.
+  for (size_t i = 0; i < ultimo; i++)
+  {
+    redirection[i][tamanhos[i] + 1] = 1;
+  }
+}
+
+void fit_info_tabela(void)
+{
+    int i = 0;
+    //a partir do iniciao verifica as posicoes ate o final da tabela
+    for(i = fim_tabela;i < tam_tabela - 1;i++)
+    {
+      //se tiver mudança de tempo define o comeco da nova configuracao de servidor-objeto
+      if(MA(tabela,3,i,0) != MA(tabela,3,i+1,0))
+      {
+        fim_tabela = i+1;//define o fim do momento inicial
+        break;
+      }
+    }
+    if(fim_tabela == 0) fim_tabela = tam_tabela;
+    if(i == tam_tabela - 1){
+        ini_tabela = fim_tabela;
+        fim_tabela = tam_tabela;
+    }
 }
