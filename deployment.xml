@@ -7,7 +7,7 @@
     <argument value="1"/><!--usado para saber quando a transferencia deve ccomeçar-->
   </actor>
   <actor host="cliente0" function="request">
-    <argument value="1"/><!-- usado para saber qual objeto o cliente quer-->
+    <argument value="2"/><!-- usado para saber qual objeto o cliente quer-->
     <argument value="1"/><!--usado para saber quando a transferencia deve ccomeçar-->
   </actor>
   <actor host="cliente2" function="request">

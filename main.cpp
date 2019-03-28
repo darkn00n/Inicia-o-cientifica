@@ -27,6 +27,11 @@ int* objetos = NULL;
 //tamanho de objetos;
 int tam_objetos = 0;
 
+//buffer de requisições
+vector<int> buffer;
+//variavel que indica o proximo momento de escrever do buffer no arquivo de requisições feitas(em segundos)
+int time_buffer = 60;
+
 //dois ponteiros que seram usados como vetores para melhor tratamento dos objetos e servidores no intervalo de tempo certo.
 int* tamanhos = NULL;//indica quando servidores tem em cada linha do proximo vetor;
 int** redirection = NULL;//a primeira posição indica qual o ID do objeto as proximas indicam os servidores que tem esse objeto e a ultima indica qual o proxima a ser usado;
@@ -42,6 +47,7 @@ static void request(vector<string> args);
 int* learquivos(string arquivo,int &quant,int col);
 void fit_redirection(bool status);
 void fit_info_tabela(void);
+void escrever_buffer(void);
 
 //utilizado somente para inicar as funções da simulação.
 int main(int argc, char** argv)
@@ -104,7 +110,8 @@ static void middleServer(vector<string> args)
   int posicao;//serve como auxiliar para a pesquisa de redirecionamento.
 
   //procura em redirection qual o servidor deve ser enviada a requisicao
-  for(int i = 0; i < tam_redirection; i++){
+  for(int i = 0; i < tam_redirection; i++)
+  {
     if(redirection[i][0] == objeto_requerido)//verifico se o ID é igual ao objeto requerido
     {
       posicao = redirection[i][tamanhos[i] + 1];//pega a posicao que tem o servidor a ser usado.
@@ -117,6 +124,53 @@ static void middleServer(vector<string> args)
 
       break;//se achou não he nescessario continuar e sai do loop
     }
+  }
+
+  //variavel usado para armazenar o tamanho do objeto
+  int tamanho_objeto;
+  //interage para descobrir o tamanho do objeto
+  for (int i = 0; i < tam_objetos; i++)
+  {
+    if(MA(objetos,2,i,0) == objeto_requerido)
+    {
+      tamanho_objeto = MA(objetos,2,i,1);
+      break;
+    }
+  }
+
+  //variavel para receber o id do cliente
+  string id_cliente;
+
+  //intera no nome do host para descobrir o id do cliente, que começa da posição 7 até o fim da string
+  for (size_t i = 7; i < (args[1]).length(); i++) {
+    id_cliente = id_cliente + args[1][i];
+  }
+
+  //escreve no buffer
+  buffer.push_back(actual_time);//guarda o tempo da requisição
+  buffer.push_back(objeto_requerido);//guarda o id do objeto
+  buffer.push_back(stoi(id_cliente));//guarda o id do cliente
+  buffer.push_back(tamanho_objeto);//guarda o tamanho do objeto
+
+  //verifica se é o momento de escrever o buffer no arquivo
+  if(time_buffer <= actual_time)
+  {
+    //se o tempo atual for muito maior que o significa que faz tempo sem uma requisicao
+    //entao o time do buffer he reescrito
+    if(actual_time > time_buffer + 60)
+    {
+      time_buffer = actual_time + 60;
+    }
+    else
+    {
+      time_buffer += 60;
+    }
+
+    //funcao que escreve o buffer no arquivo
+    escrever_buffer();
+
+    //limpa o buffer para nao escrever as mesma requisicoes novamente
+    //buffer.clear();
   }
 
   //atualiza a mailbox, para enviar para o servidor certo.
@@ -371,6 +425,7 @@ void fit_redirection(bool status)
   }
 }
 
+//atualiza os valores de inicio e fim da tabela
 void fit_info_tabela(void)
 {
     int i = 0;
@@ -389,4 +444,27 @@ void fit_info_tabela(void)
         ini_tabela = fim_tabela;
         fim_tabela = tam_tabela;
     }
+}
+
+//escreve o buffer em um arquivo
+void escrever_buffer(void)
+{
+  ofstream arq;//variavel que é utilizada para operações com arquivo
+  int aux = 0;//
+
+  //colocar ios::app para apendice
+  arq.open("arquivos/requisicoes.txt", ios::trunc);//apre um arquivo no formato de apendice, ou seja, semrpe escreve no final
+
+  //intera dentro do vector buffer
+  for(auto e : buffer)
+  {
+    arq << e;//escreve cada item no arquivo
+    aux++;//para saber quando escrever a quebra de linha
+    if(aux == 4)
+    {
+      aux = 0;
+      arq << '\n';
+    }
+    else arq << ' ';//um espaço no arquivo
+  }
 }
