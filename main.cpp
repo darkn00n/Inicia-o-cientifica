@@ -30,7 +30,7 @@ int tam_objetos = 0;
 //buffer de requisições
 vector<int> buffer;
 //variavel que indica o proximo momento de escrever do buffer no arquivo de requisições feitas(em segundos)
-int time_buffer = 60;
+int time_buffer = -1;
 
 //dois ponteiros que seram usados como vetores para melhor tratamento dos objetos e servidores no intervalo de tempo certo.
 int* tamanhos = NULL;//indica quando servidores tem em cada linha do proximo vetor;
@@ -77,6 +77,8 @@ int main(int argc, char** argv)
   fit_redirection(true);//cria a estrutura auxiliar para redirecionamento.
 
   e.run();//roda a simulacao
+
+  escrever_buffer();//escreve o ultimo minuto da simulacao que já estava no buffer
   return 0;
 }
 
@@ -147,30 +149,29 @@ static void middleServer(vector<string> args)
   }
 
   //escreve no buffer
-  buffer.push_back(actual_time);//guarda o tempo da requisição
-  buffer.push_back(objeto_requerido);//guarda o id do objeto
-  buffer.push_back(stoi(id_cliente));//guarda o id do cliente
-  buffer.push_back(tamanho_objeto);//guarda o tamanho do objeto
-
-  //verifica se é o momento de escrever o buffer no arquivo
-  if(time_buffer <= actual_time)
+  if(actual_time / 60 > time_buffer || time_buffer == -1)
   {
-    //se o tempo atual for muito maior que o significa que faz tempo sem uma requisicao
-    //entao o time do buffer he reescrito
-    if(actual_time > time_buffer + 60)
-    {
-      time_buffer = actual_time + 60;
-    }
-    else
-    {
-      time_buffer += 60;
-    }
+    time_buffer = actual_time / 60;
 
-    //funcao que escreve o buffer no arquivo
     escrever_buffer();
+    buffer.clear();
 
-    //limpa o buffer para nao escrever as mesma requisicoes novamente
-    //buffer.clear();
+    for (size_t i = 0; i < tam_redirection; i++)
+    {
+      buffer.push_back(actual_time / 60);//guarda o tempo da requisição no formato de minutos
+      buffer.push_back(redirection[i][0]);//guarda o id do objeto
+      buffer.push_back(0);//guarda a quantidade de vezes que o objeto foi requerido
+    }
+  }
+
+  //percorre o buffer até o final para acrescentar a requisicao
+  for(size_t i = 0; i < tam_redirection; i++)
+  {
+    //verifica a posição 1 para saber qual a linha que tem o objeto
+    if(buffer[i*3 + 1] == objeto_requerido)
+    {
+      buffer[i*3 + 2]++;//posição 3 que fica a quantidade de requisicoes nesse instante
+    }
   }
 
   //atualiza a mailbox, para enviar para o servidor certo.
@@ -453,14 +454,14 @@ void escrever_buffer(void)
   int aux = 0;//
 
   //colocar ios::app para apendice
-  arq.open("arquivos/requisicoes.txt", ios::trunc);//apre um arquivo no formato de apendice, ou seja, semrpe escreve no final
+  arq.open("arquivos/requisicoes.txt", ios::app);//apre um arquivo no formato de apendice, ou seja, semrpe escreve no final
 
   //intera dentro do vector buffer
   for(auto e : buffer)
   {
     arq << e;//escreve cada item no arquivo
     aux++;//para saber quando escrever a quebra de linha
-    if(aux == 4)
+    if(aux == 3)
     {
       aux = 0;
       arq << '\n';
